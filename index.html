@@ -4,79 +4,94 @@
 <meta charset="UTF-8">
 <title>宠物连连看</title>
 <style>
-  body {
-    font-family: Arial;
-    text-align: center;
-    background: #f5f5f5;
-  }
-  h1 { margin-top: 20px; }
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #f5f5f5;
+}
 
-  #game {
-    display: grid;
-    grid-template-columns: repeat(8, 60px);
-    gap: 5px;
-    justify-content: center;
-    margin-top: 20px;
-  }
+#info {
+  margin-top: 10px;
+  font-size: 18px;
+}
 
-  .tile {
-    width: 60px;
-    height: 60px;
-    font-size: 30px;
-    background: white;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+#game {
+  display: grid;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 20px;
+}
 
-  .selected {
-    background: #ffd54f;
-  }
+.tile {
+  width: 60px;
+  height: 60px;
+  font-size: 30px;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .hidden {
-    visibility: hidden;
-  }
+.selected {
+  background: #ffd54f;
+}
+
+.hidden {
+  visibility: hidden;
+}
 </style>
 </head>
 <body>
 
 <h1>🐾 宠物连连看</h1>
-<p>点击两个相同宠物进行消除</p>
+
+<div id="info">
+  ⏱ 时间: <span id="time">600</span>s |
+  🎮 关卡: <span id="level">1</span>
+</div>
 
 <div id="game"></div>
 
 <script>
-const animals = ["🐶","🐱","🐰","🐼","🐸","🐵","🐷","🐔"];
-let tiles = [];
+const animals = ["🐶","🐱","🐰","🐼","🐸","🐵","🐷","🐔","🦊","🐯","🐮","🐤"];
+
+let gridSize = 8; // 8x8
+let level = 1;
+let timeLeft = 600; // 10 mins
+
 let first = null;
 let second = null;
 
-function shuffle(array) {
-  return array.sort(() => Math.random() - 0.5);
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
 }
 
-// create pairs
-function init() {
+function generateTiles() {
+  let needed = gridSize * gridSize;
   let arr = [];
-  animals.forEach(a => {
-    arr.push(a);
-    arr.push(a);
-  });
 
-  // duplicate to fill grid
-  arr = arr.concat(arr);
-  arr = shuffle(arr);
+  while (arr.length < needed) {
+    let a = animals[Math.floor(Math.random() * animals.length)];
+    arr.push(a, a);
+  }
 
+  return shuffle(arr.slice(0, needed));
+}
+
+function init() {
   const game = document.getElementById("game");
   game.innerHTML = "";
+  game.style.gridTemplateColumns = `repeat(${gridSize}, 60px)`;
 
-  arr.forEach((a, i) => {
+  const tiles = generateTiles();
+
+  tiles.forEach(val => {
     const div = document.createElement("div");
     div.className = "tile";
-    div.innerText = a;
-    div.dataset.value = a;
+    div.innerText = val;
+    div.dataset.value = val;
     div.onclick = () => clickTile(div);
     game.appendChild(div);
   });
@@ -92,7 +107,7 @@ function clickTile(tile) {
     second = tile;
     tile.classList.add("selected");
 
-    setTimeout(checkMatch, 300);
+    setTimeout(checkMatch, 200);
   }
 }
 
@@ -100,6 +115,8 @@ function checkMatch() {
   if (first.dataset.value === second.dataset.value) {
     first.classList.add("hidden");
     second.classList.add("hidden");
+
+    checkWin();
   }
 
   first.classList.remove("selected");
@@ -108,7 +125,32 @@ function checkMatch() {
   second = null;
 }
 
+function checkWin() {
+  const remaining = document.querySelectorAll(".tile:not(.hidden)");
+  if (remaining.length === 0) {
+    level++;
+    gridSize = Math.min(10, gridSize + 1); // harder
+    alert("🎉 进入下一关 Level " + level);
+    init();
+  }
+}
+
+function startTimer() {
+  const timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById("time").innerText = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      alert("⏰ 时间到！游戏结束");
+      location.reload();
+    }
+  }, 1000);
+}
+
+// start game
 init();
+startTimer();
 </script>
 
 </body>
